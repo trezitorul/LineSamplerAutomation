@@ -1,8 +1,9 @@
 This is my first attempt to play with repos.
 
+
+Now I am playing with the branching system in git to see what happens
+
 So essentially, the branch system allows me to play with my files before I have to commit them finally.
 
 This is great since I often want to try a method but will often find that the way I have implemented it is not satisfactory and thus 
 I need to delete most of it. I should practice making many many many branches and just merging them with the master constantly.
-
-
