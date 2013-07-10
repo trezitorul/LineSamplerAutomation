@@ -1,10 +1,10 @@
 #This the new and revised python script for the linesampler operation. This script was created due to the need to restructure the previous version of this script.
  
-import sys
+#import sys
 import os
-sys.path.append("/opt/visit2.6.2/src/lib/site-packages")
-from visit import *
-Launch(vdir="/opt/visit2.6.2/src/bin")
+#sys.path.append("/opt/visit2.6.2/src/lib/site-packages")
+#from visit import *
+#Launch(vdir="/opt/visit2.6.2/src/bin")
 import math
 
 def createEnviroment(expr):
