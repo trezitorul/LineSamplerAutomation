@@ -9,39 +9,60 @@ import math
 
 def createEnviroment(expr):
 	"""
-	This creates the enviroment of operation by bringing into existance all of the proper variables that will eventually be used and plotted.
+	This creates the enviroment of operation by bringing into existence all of the proper variables that will eventually be used and plotted.
 	
 	Keyword Arguments:
-	array-Gives the tuple with each of the chords specified in an array
 	expr-This has four things required for every expression, the proper database from which the variables are to be accessed,The objects for which the expression will be repeated, The expression name, and the actual expression 
 	
 	(database, array of repeated expr, id, expression)
 	"""
 	print("")
 	print("Beginning To Create Enviroment for Processing")
-	openDatabases(expr)
-	createVariables(expr)
+	openDatabases(expr)#Opens the databases required for the variables
+	createVariables(expr)#Batch generates all of the expression variables from the file
 	print("Enviroment Created Successfully with the following Variables")
 	print("")
 	print("")
-	print(Expressions())
+	print(Expressions())#Outputs all of the expressions that vist has stored away
 	print("")
 	print("")
+
 def createVariables(expr):
+	"""
+	Creates all of the expressions specified in the expr data structure
+
+	Keyword Arguments:
+	expr-This has four things required for every expression, the proper database from which the variables in the expression are to be accessed, the objects for which the expression will be repeated, The expression name, and the actual expression.
+
+	Output:
+	Loads the proper variables into visit with the variables that contain an array having an expression being defined for every individual chord.
+	"""
+
 	print("Creating Variables for Enviroment")
-	for ex in expr:
-		ActivateDatabase(ex[0])
-		if len(ex[1])==0:
+	for ex in expr:#Iterate through expression
+		ActivateDatabase(ex[0])#Load the proper database for the particular term of expr
+		if len(ex[1])==0:#If there is no array for the variable (IE helper variable) then just defne expr with expr id
 			DefineScalarExpression(ex[2],ex[3])
 		else:
-			for obj in ex[1]:
+			for obj in ex[1]:#If there is an array then define an expr for each chord element with the name exprID+chordTuple
 				DefineScalarExpression(ex[2]+str(obj),formatExpr(obj,ex[3]))
 
 def formatExpr(var,expr):
+	"""
+	The expr when defined references the array values by the insertion of $X where X is the location in the chord tuple that the value of the variable that you want in the expression. For example chord is (6,3,0,181) the expression is cos($3) thus the formatExpr will output cos(181)
+
+	Keyword Arguments:
+	var-chord tuple
+	expr-A visit expression string that has not yet been parsed
+
+	Output:
+	The expression string with all of the variables inserted in the proper places
+	"""
+
 	print("Formatting Expression for " + str(var) + " with Expression : " + expr)
 	temp =[]
 	out=expr
-	for i in range(len(var)):
+	for i in range(len(var)):#For the number of slots in the chord tuple split expr by $X and then insert the correct values
 		temp=out.split("$"+str(i))
 		out=""
 		for k in range(len(temp)-1):
@@ -50,7 +71,16 @@ def formatExpr(var,expr):
 	return out
 	
 def openDatabases(expr):
-	for db in expr:
+	"""
+	This opens all of the databases referenced in the expr datastructure.
+
+	KeywordArguments:
+	expr-data structure containing the database, array, expression id, and expression data
+
+	Output:
+	Loads all the databases to be used by the expressions to befined
+	"""
+	for db in expr:#Repeat for all databases in expr
 		print("Opening database :" + db[0])
 		OpenDatabase(db[0])
 
@@ -59,15 +89,20 @@ def openDatabases(expr):
 def setLineSamplerAttr(chan,mode,attr):
 	"""
 	Used to set the line sampler attributes in a modal way
-
+	
+	Keyword Arguments:
 	mode -- 1 is sample channel and return sample
 		2 is integrate channel and return integral
 		3 is toroidal sample
-	attr -- an array which has the various properties of the line sampler
+	chan -- an array which has the various properties of the line sampler
 		for simpler sampler [res,scale]
 		for toroidal sample mode [linRes,scale,startAngle, endAngle, angRes]
 		for toroidal Integral mode [res, scale]
+	attr -- An array that is used to pass in the attributes depending on mode
+		For mode 1: [resolution, plotScale]
+		For mode 3: [resolution, plotScale, startAng, stopAng, angRes]
 	"""
+
 	if(mode==1):
 		print("Line Sampler Mode Initiated")
     		ls=LineSamplerAttributes()
@@ -94,7 +129,17 @@ def setLineSamplerAttr(chan,mode,attr):
     	SetOperatorOptions(ls)
 
 def saveOutputData(op,expr,chan,batchName):
-	createFileSys(expr,batchName)
+	"""
+	Sets the properties for saving and the file attributes of the saved file
+
+	Keyboard Arguments:
+	op - Adds a flag in the name for the different type of mode for instance LS for just linesample and TI for toroidal integrals
+	expr - This is the expression type that is being used for instance dnB or dBn
+	chan - This is the channel that is currently being saved
+	batchName - This is the batch name for the whole run
+	"""
+
+	createFileSys(expr,batchName)#This creates the filesystem to save the file system
 	s=SaveWindowAttributes()
 	s.outputToCurrentDirectory=0
 	s.outputDirectory="./"+batchName+"/"+expr
@@ -106,6 +151,19 @@ def saveOutputData(op,expr,chan,batchName):
 	SaveWindow()
 
 def createFileSys(expr,batchName):
+	"""
+	Creates the file system to store the output files
+	Keyword Arguments:
+	expr - expression id for the files being created
+	batchName - the name of the batch run being done
+
+	Output:
+	A file system in the same directory as the script
+	With the following structure
+	batchName
+		-Expr
+	"""
+
 	try:
 		os.mkdir(batchName)
 	except:
@@ -115,15 +173,44 @@ def createFileSys(expr,batchName):
 		os.mkdir(batchName+"/"+expr)
 	except:
 		pass
-
+#The methods above are used to create the enviroment in visit
 #####################################################
+#The methods below are used to automate the linesampler system
+
 def rotSymLineSample(res,scale,expr,batchName):
+	"""
+	This runs through each of the expressions in the expr data structure and runs the line sampler and returns the output at the angles specified by the chord arrays 
+	NOTE: For vector products without a dependence on phi 
+	Keyword Arguments:
+	res - resolution of the line sampler
+	scale - plot scale of the line sampler
+	expr - the expression datastructure that we are executing
+	batchName - name of the batch 
+
+	Output:
+	Linesample ascii files at the sample location given by arrays
+	"""
+
 	for ex in expr:
 		if len(ex[1])!=0:
 			for chan in ex[1]:
 				rotSymChanSample(ex[0],ex[2],chan,res,scale,batchName)
 
 def rotSymChanSample(dB,expr,chan,res,scale,batchName):
+	"""
+	Samples at a particular channel and saves the output to ascii
+
+	Keyword Arguments:
+	dB-The database of being used by the expression for the channel
+	expr-The expression id
+	chan-The channel being sampled
+	res-resolution of the lineSampler
+	scale-The plot scaling of the output
+	batchName-The name of the batch being executed
+
+	Output:
+	Saves the output of the particular channel into an ascii file
+	"""
 	AddWindow()
 	ActivateDatabase(dB)
 	activeVar=expr+"("+str(chan[0])+", "+str(chan[1])+", 0, "+str(chan[3])+", "+str(chan[4])+")"
@@ -138,12 +225,45 @@ def rotSymChanSample(dB,expr,chan,res,scale,batchName):
 	DeleteWindow()
 
 def rotSymToroidalInt(linRes,angRes,scale,startAng,stopAng,expr,batchName):
+	"""
+	Goes through and gives the toroidal integral for each of the arrays in the expr data structure
+	Note: For vector products which have no dependence on phi only.
+	Keyword Arguments:
+	linRes-The linear resolution of the lineSampler
+	angRes-The angular resolution
+	scale-The plot scale of lineSample
+	startAng-Starting angle of the lineSample of the toroidal integral fxn
+	stopAng-Stoping angle of the lineSample fo the toridal integral fxn
+	expr-datastruct containing the expression data
+	batchName-name of the batch being executed
+
+	Output: 
+	Outputs many files for each of the channels being integrated into the proper file system
+	"""
 	for ex in expr:
 		if len(ex[1])!=0:
 			for chan in ex[1]:
 				rotSymToroidalIntChan(ex[0],ex[2],chan,linRes,angRes,startAng,stopAng,scale,batchName)
 
 def rotSymToroidalIntChan(dB,expr,chan,linRes,angRes,startAng,stopAng,scale,batchName):
+	"""
+	This takes the toroidal integral of a channel with a specified expression
+	Note: For expressions which have no dependence on the phi direction only
+	Keyword Arguments:
+	dB-The database used by the expression variables
+	expr-The expression being evaluated
+	chan-channel tuple being integrated
+	linRes-Linear resolution of the lineSampler
+	angRes-Angular resolution of the toroidal integrator in degrees
+	startAng-Starting angle for the toroidal integration in degrees
+	stopAng-Stopping angle for the toroidal integrator in degrees
+	stopAng-Stopping angle for the toroidal integrator in degrees
+	scale-Plot scale for the lineSampler
+	batchName-Name of the batch currently being run
+
+	Output:
+	Ascii file for one channels toroidal integral plot
+	"""
 	AddWindow()
 	ActivateDatabase(dB)
 	activeVar=expr+"("+str(chan[0])+", "+str(chan[1])+", 0, "+str(chan[3])+", "+str(chan[4])+")"
@@ -156,6 +276,26 @@ def rotSymToroidalIntChan(dB,expr,chan,linRes,angRes,startAng,stopAng,scale,batc
 	DeleteWindow()
 
 def rotSymToroidalSampling(array,dBFile,BFile,linRes,startAng,stopAng,angRes,scale, batchName):
+	"""
+	Returns the channel sampling at different phi angles
+	NOTE: For expressions which have no dependence on the phi angle only
+	NOTE: THIS METHOD WAS HARD CODED FOR THE BERG POLARIMETER AND SHOULD BE GENERALIZED
+
+	Keyword Arguments:
+	array-The array of chord tuples being sampled
+	dBFile-The dB database file
+	Bfile-The B data base file
+	linRes-The linear resolution of the linesampler
+	startAng-Where to start sampling
+	stopAng-Where to stop sampling
+	angRes-The angular resolution
+	scale-The plot scale of the lineSampler
+	batchName-Name of the batch currently executing
+
+	Output:
+	Files containing the channel samples for various toroidal angles
+	"""
+
 	for ang in range(startAng,stopAng,angRes):
 		expr=updateExpr(array,dBFile,BFile,ang)
 		rotSymLineSample(linRes,scale,expr,batchName)
@@ -180,6 +320,19 @@ def updateCurrentArray(array,phi):
 	return newArray
 
 def updateExpr(array,dBFile,BFile,phi): 
+	"""
+	Changes the array toroidal angle and updates the expr data structure
+	NOTE: THIS WAS HARDCODED FOR THE BERG POLARIMETER AND SHOULD BE GENERALIZED
+	
+	Keyword Arguments:
+	array-Array of chord tuples
+	dBFile-The dB database location
+	BFile-The B database location
+
+	Output:
+	The expression with the chord at a different angle
+	"""
+
 	newArray=updateCurrentArray(array,phi)
 	expr=[#(BFile,newArray,"dn","npert")
 (BFile,[],"R","{1,0,0}*coord(B)[0]/sqrt(coord(B)[0]^2+coord(B)[1]^2)+{0,1,0}*coord(B)[1]/sqrt(coord(B)[0]^2+coord(B)[1]^2)")
