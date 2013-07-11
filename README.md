@@ -1,5 +1,6 @@
 LineSamplerAutomation
 =====================
+THIS SCRIPT IS IN STASIS AND DEVELOPMENT WILL BE HALTED FOR THE TIME BEING
 
 This is the repository for the automated linesampler script that I have created for the Plasma Science and Fusion Center.
 
