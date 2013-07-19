@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding = "us-ascii"?>
+
+<batch
+	batchName="abstractRun"
+	batchDirectory="."
+	>
+	<array array="[(6.08864,1.132,0, 181.701),(6.08864,1.132,0, 184.642),(6.08864,1.132,0, 187.853),(6.08864,1.132,0, 192.718)]">
+		<expr>
+			<exprDB>
+				"hopper.nersc.gov:/project/projectdirs/m3dls/h5.cmod_jrtv3_vp-01404_np12000_Bhel_p288000.silo"
+			</exprDB>
+
+			<exprID>
+				"dnB"
+			</exprID>
+
+			<expression>
+				"npert*BdotL"
+			</expression>
+		</expr>
+	</array>
+
+	<array array="">
+		<expr>
+			<exprDB>
+				"hopper.nersc.gov:/project/projectdirs/m3dls/h5.cmod_jrtv3_vp-01404_np12000_Bhel_p288000.silo"
+			</exprDB>
+			
+			<exprID>
+				"dn"
+			</exprID>
+
+			<expression>
+				"npert"
+			</expression>
+		</expr>
+</batch>
