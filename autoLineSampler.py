@@ -1,11 +1,16 @@
 #This the new and revised python script for the linesampler operation. This script was created due to the need to restructure the previous version of this script.
  
-#import sys
+import sys
 import os
-#sys.path.append("/opt/visit2.6.2/src/lib/site-packages")
-#from visit import *
-#Launch(vdir="/opt/visit2.6.2/src/bin")
+sys.path.append("/opt/visit2.6.2/src/lib/site-packages")
+from visit import *
+Launch(vdir="/opt/visit2.6.2/src/bin")
 import math
+#import xml.etree.ElementTree as ET
+
+#def getExpr(fileName):
+#	tree=ET.parse(fileName)
+#	root=tree.getroot()
 
 def createEnviroment(expr):
 	"""
@@ -143,7 +148,7 @@ def saveOutputData(op,expr,chan,batchName):
 	s=SaveWindowAttributes()
 	s.outputToCurrentDirectory=0
 	s.outputDirectory="./"+batchName+"/"+expr
-	s.format=s.PNG
+	s.format=s.CURVE
 	s.family=0
 	s.screenCapture=0
 	s.fileName=expr+str(chan)+op
@@ -311,13 +316,21 @@ def updateCurrentArray(array,phi):
 	Returns:
 	The rotated array in the same format as the original array 
 	"""
-
+	print("HELLO WORLD UPDATING CURRENT ARRAY")
 	newArray=array
 	k=0
 	for chord in newArray:
+		print(newArray)
 		newArray[k]=(chord[0],chord[1],phi,chord[3],chord[4])
+		print(newArray)
+		print("#######")
 		k+=1
 	return newArray
+def calculateChordLength(theta,R1,R0,Z1):
+	dR=R1-R0
+	Z0=Z1-math.tan(theta*(math.pi/180)-math.pi)*dR
+	dZ=Z1-Z0
+	return math.sqrt(dR**2+dZ**2)
 
 def updateExpr(array,dBFile,BFile,phi): 
 	"""
@@ -334,21 +347,28 @@ def updateExpr(array,dBFile,BFile,phi):
 	"""
 
 	newArray=updateCurrentArray(array,phi)
-	expr=[#(BFile,newArray,"dn","npert")
-(BFile,[],"R","{1,0,0}*coord(B)[0]/sqrt(coord(B)[0]^2+coord(B)[1]^2)+{0,1,0}*coord(B)[1]/sqrt(coord(B)[0]^2+coord(B)[1]^2)")
-,(BFile,[],"B_R","B*R")
-,(BFile,[],"B_Z","B*{0,0,1}")
-,(BFile,newArray,"dnB","$4*(B_R*cos($3*(3.14159/180))+sin($3*(3.14159/180))*B_Z)")
-#,(BFile,newArray,"dnB","npert*$4*(B_R*cos($3*(3.14159/180))+sin($3*(3.14159/180))*B_Z)")
-#,(dBFile,newArray,"dBn","density*$4*(dB_R*cos($3*(3.14159/180))+sin($3*(3.14159/180))*dB_Z)"),
-,(dBFile,[],"dB_R","dB*R")
-,(dBFile,[],"dB_Z","dB*{0,0,1}")
-#,(BFile,newArray,"n","density") ]
-]
+	expr=[#(BFile,newArray,"dn","npert*"+str(cl)),
+(BFile,[],"X","coord(mesh)[0]"),
+(BFile,[],"Y","coord(mesh)[1]"),
+(BFile,[],"B_X","dot(B,{1,0,0})"),
+(BFile,[],"B_Y","dot(B,{0,1,0})"),
+(BFile,[],"B_R","(B_X*X+B_Y*Y)/sqrt(X^2+Y^2)"),
+(BFile,[],"B_Z","dot(B,{0,0,1})"),
+#(BFile,newArray,"BdL",str(cl)+"*(B_R*cos($3*(3.14159/180))+B_Z*sin($3*(3.14159/180)))"),
+#(BFile,newArray,"dnB",str(cl)+"*npert*(B_R*cos($3*(3.14159/180))+B_Z*sin($3*(3.14159/180)))"),
+#(BFile,[(6,0,0,180,.1)],"BdlHORTEST", "6*(B_R*cos($3*(3.14159/180))+B_Z*sin($3*(3.14159/180)))"),
+#(dBFile,newArray,"n",str(cl)+"*density"),
+(dBFile,[],"dB_X","dot(dB,{1,0,0})"),
+(dBFile,[],"dB_Y","dot(dB,{0,1,0})"),
+(dBFile,[],"dB_R","(dB_X*X+dB_Y*Y)/sqrt(X^2+Y^2)"),
+(dBFile,[],"dB_Z","dot(dB,{0,0,1})"),
+#(dBFile,newArray,"dBdL",str(cl)+"*(dB_R*cos($3*(3.14159/180))+dB_Z*sin($3*(3.14159/180)))"),
+#(dBFile,newArray,"ndB",str(cl)+"*density*(dB_R*cos($3*(3.14159/180))+dB_Z*sin($3*(3.14159/180)))")]
+(BFile,newArray,"nB", str(cl)+"*density*(B_R*cos($3*(3.14159/180))+B_Z*sin($3*(3.14159/180)))")]
 	return expr
 ##################################################################
-
-array=[(6.08864,1.132,0, 181.701,.1),(6.08864,1.132,0, 184.642,.1),(6.08864,1.132,0, 187.853,.1),(6.08864,1.132,0, 192.718,.1)]
+array=[(6.08864,1.132,0,192.718,.1)]
+#array=[(6.08864,1.132,0, 181.701,.1),(6.08864,1.132,0, 184.642,.1),(6.08864,1.132,0, 187.853,.1),(6.08864,1.132,0, 192.718,.1)]
 #array=[(6.08864,1.132,0,3.1712,.1),(6.08864,1.132,0,3.2226,.1),(6.08864,1.132,0,3.2786,.1),(6.08864,1.132,0,3.3635,.1)]
 
 BFile = "hopper.nersc.gov:/project/projectdirs/m3dls/h5.cmod_jrtv3_vp-01404_np12000_Bhel_p288000.silo"
@@ -362,9 +382,24 @@ dBFile="hopper.nersc.gov:/project/projectdirs/m3dls/h5.Bhel_p288000_dBvector2.si
 #(dBFile,[],"dB_R","dB*R")
 #,(dBFile,[],"dB_Z","dB*{0,0,1}",
 #,(BFile,array,"n","density")]
+cl=calculateChordLength(192.718,6.08864,0,1.132)
+print(cl)
 expr = updateExpr(array,dBFile,BFile,0)
 createEnviroment(expr)
-batchName="B*dl Verification"
-rotSymLineSample(.1,1,expr,batchName)
+batchName="ReScaleRun 7-16-13"
+#rotSymLineSample(.1,1,expr,batchName)
 #rotSymToroidalSampling(array,dBFile,BFile,.1,0,360,360/8,1,batchName)
-#rotSymToroidalInt(.1,1,1,0,360,expr,batchName)
+rotSymToroidalInt(.1,1,1,0,360,expr,batchName)
+
+
+#expr=[#(BFile,newArray,"dn","npert")
+#(BFile,[],"R","{1,0,0}*coord(B)[0]/sqrt(coord(B)[0]^2+coord(B)[1]^2)+{0,1,0}*coord(B)[1]/sqrt(coord(B)[0]^2+coord(B)[1]^2)")
+#,(BFile,[],"B_R","B*R")
+#,(BFile,[],"B_Z","B*{0,0,1}")
+
+#,(BFile,newArray,"dnB","$4*(B_R*cos($3*(3.14159/180))+sin($3*(3.14159/180))*B_Z)")
+#,(BFile,newArray,"dnB","npert*$4*(B_R*cos($3*(3.14159/180))+sin($3*(3.14159/180))*B_Z)")
+#,(dBFile,newArray,"dBn","density*$4*(dB_R*cos($3*(3.14159/180))+sin($3*(3.14159/180))*dB_Z)"),
+#,(dBFile,[],"dB_R","dB*R")
+#,(dBFile,[],"dB_Z","dB*{0,0,1}")
+#,(BFile,newArray,"n","density") ]#]
